@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mssg-net-lithology"
+version = "0.1.0"
+description = "Reference implementation of MSSG-Net for well-log lithology identification"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "numpy>=1.24,<2.0",
+  "pandas>=2.0,<3.0",
+  "scikit-learn>=1.3",
+  "torch>=2.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

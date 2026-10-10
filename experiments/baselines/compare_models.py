@@ -107,9 +107,9 @@ class GAT(nn.Module):
 def _metrics(y_true: np.ndarray, y_pred: np.ndarray, penalty: Optional[np.ndarray]) -> Dict[str, float]:
     result = {
         "accuracy": float(accuracy_score(y_true, y_pred)),
-        "precision_macro": float(precision_score(y_true, y_pred, average="macro", zero_division=0)),
-        "recall_macro": float(recall_score(y_true, y_pred, average="macro", zero_division=0)),
-        "f1_macro": float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
+        "precision": float(precision_score(y_true, y_pred, average="weighted", zero_division=0)),
+        "recall": float(recall_score(y_true, y_pred, average="weighted", zero_division=0)),
+        "f1": float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
     }
     if penalty is not None:
         result["penalty"] = float((-penalty[y_true, y_pred]).mean())

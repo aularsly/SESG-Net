@@ -10,9 +10,22 @@ import numpy as np
 import torch
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
-from SESG_Net.config import PipelineConfig, TrainConfig
+from SESG_Net.config import ModelConfig, PipelineConfig, TrainConfig
 from SESG_Net.preprocessing import build_training_artifacts
 from SESG_Net.training import build_model, predict_model
+
+
+def load_saved_configs(checkpoint: Path):
+    metrics_path = checkpoint.parent / "metrics.json"
+    if not metrics_path.exists():
+        return PipelineConfig(), TrainConfig()
+    payload = json.loads(metrics_path.read_text(encoding="utf-8"))
+    training_payload = dict(payload.get("training_config", {}))
+    model_payload = dict(training_payload.pop("model", {}))
+    model_config = ModelConfig(**model_payload) if model_payload else ModelConfig()
+    train_config = TrainConfig(model=model_config, **training_payload)
+    pipeline_config = PipelineConfig(**payload.get("pipeline_config", {}))
+    return pipeline_config, train_config
 
 
 def run_test(
@@ -24,8 +37,9 @@ def run_test(
     pipeline_config: Optional[PipelineConfig] = None,
     train_config: Optional[TrainConfig] = None,
 ) -> Dict[str, float]:
-    pipeline_config = pipeline_config or PipelineConfig()
-    train_config = train_config or TrainConfig()
+    saved_pipeline_config, saved_train_config = load_saved_configs(checkpoint)
+    pipeline_config = pipeline_config or saved_pipeline_config
+    train_config = train_config or saved_train_config
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     artifacts = build_training_artifacts(train_csv, test_csv, pipeline_config)
     model, _, _ = build_model(artifacts, train_config, device)
@@ -36,9 +50,9 @@ def run_test(
     y_pred = predictions["pred"].to_numpy(np.int64)
     metrics = {
         "accuracy": float(accuracy_score(y_true, y_pred)),
-        "precision_macro": float(precision_score(y_true, y_pred, average="macro", zero_division=0)),
-        "recall_macro": float(recall_score(y_true, y_pred, average="macro", zero_division=0)),
-        "f1_macro": float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
+        "precision": float(precision_score(y_true, y_pred, average="weighted", zero_division=0)),
+        "recall": float(recall_score(y_true, y_pred, average="weighted", zero_division=0)),
+        "f1": float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
     }
     if penalty_matrix_path is not None and penalty_matrix_path.exists():
         penalty = np.load(penalty_matrix_path)

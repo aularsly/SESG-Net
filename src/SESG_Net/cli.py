@@ -54,7 +54,13 @@ def run_training(
     artifacts = build_training_artifacts(train_csv, val_csv, pipeline_config)
     penalty_matrix = np.load(penalty_matrix_path) if penalty_matrix_path.exists() else None
     result = train_model(artifacts, train_config, penalty_matrix=penalty_matrix)
-    save_training_result(result, output_dir, train_config)
+    save_training_result(
+        result,
+        output_dir,
+        train_config,
+        pipeline_config,
+        artifacts.preprocessing_stats,
+    )
     return result
 
 

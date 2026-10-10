@@ -9,9 +9,12 @@ This repository provides the implementation for data preprocessing, model traini
 ```text
 .
 |-- data/
+|   |-- sample/
 |   `-- README.md
 |-- docs/
-|   `-- method_alignment.md
+|   |-- assets/
+|   |-- method.md
+|   `-- reproduction.md
 |-- experiments/
 |   |-- ablations/component_ablation.py
 |   |-- baselines/compare_models.py
@@ -24,6 +27,7 @@ This repository provides the implementation for data preprocessing, model traini
 |   |-- model.py
 |   |-- preprocessing.py
 |   `-- training.py
+|-- tests/test_pipeline.py
 |-- train.py
 |-- requirements.txt
 `-- pyproject.toml
@@ -42,11 +46,38 @@ Main files and modules are organized as follows:
 | `experiments/baselines/compare_models.py`     | Baseline comparison experiments                 |
 | `experiments/ablations/component_ablation.py` | Component ablation experiments                  |
 | `experiments/testing/evaluate.py`             | Evaluation on the test set                      |
+| `tests/test_pipeline.py`                      | Automated tests for the data and model pipeline |
 | `data/README.md`                              | Dataset source and input data description       |
+| `docs/method.md`                              | Method and implementation description           |
+| `docs/reproduction.md`                        | Experiment reproduction guide                   |
+
+## Method Overview
+
+![Overall workflow of SESG-Net](docs/assets/figure1-workflow.png)
+
+*Fig. 1. Overall workflow of SESG-Net.*
+
+SESG-Net uses ten well-log curves: GR, RDEP, RMED, RSHA, RHOB, NPHI, DTC, SP, CALI, and PEF. Missing-value indicators are generated before imputation. Resistivity curves are transformed logarithmically, and continuous curves are standardized within each well. The processed inputs are passed to the well-log sequence encoder and the stratigraphy-constrained spatial graph neural network.
+
+### Well-log Sequence Encoding
+
+![Well-log sequence encoding module](docs/assets/figure2-sequence-encoder.png)
+
+*Fig. 2. Well-log sequence encoding module.*
+
+For each target depth, the sequence branch constructs a centered window of 129 samples. Parallel one-dimensional convolutions with kernel sizes of 9, 19, and 39 extract multiscale response patterns. Residual feature extraction and attention pooling produce the sequence representation, while an auxiliary branch encodes the missing-value indicators.
+
+### Stratigraphy-constrained Spatial Graph
+
+![Stratigraphy-constrained spatial graph neural network module](docs/assets/figure3-spatial-graph.png)
+
+*Fig. 3. Stratigraphy-constrained spatial graph neural network module.*
+
+Consecutive samples with similar responses are grouped into supernodes. Cross-well candidate nodes are searched within the stratigraphic context and spatial radius. The dynamic edge scorer selects 10 neighboring supernodes, and GraphSAGE aggregates their features. The sequence, missing-state, and spatial representations are fused for sample-level lithology prediction.
 
 ## Installation
 
-Python 3.9 or later is recommended.
+Python 3.8 to 3.11 is supported.
 
 ```bash
 python -m venv .venv
@@ -61,9 +92,9 @@ For GPU acceleration, install a PyTorch version compatible with the local CUDA e
 
 ## Data Preparation
 
-The experiments are based on the **FORCE 2020 Well Log Lithology Dataset**.
+The experiments are based on the [FORCE 2020 Well Log Lithology Dataset](https://zenodo.org/records/4351156).
 
-Detailed information about data acquisition and file preparation is provided in:
+Detailed information about data acquisition, required columns, lithology labels, and penalty-matrix order is provided in:
 
 ```text
 data/README.md
@@ -86,7 +117,7 @@ where:
 * `test.csv`: test dataset
 * `penalty_matrix.npy`: lithology misclassification penalty matrix
 
-The original dataset is not included in this repository.
+The CSV files use a semicolon delimiter. Training, validation, and test wells must be disjoint. The complete FORCE 2020 dataset is not included in this repository.
 
 ## Model Training
 
@@ -140,10 +171,12 @@ python experiments/ablations/component_ablation.py
 
 The experiments include the following configurations:
 
-* sequence information only
-* spatial information only
-* spatial information with stratigraphic constraints
-* combined sequence and spatial information
+* well-log sequence encoding
+* spatial graph neural network
+* stratigraphy-constrained spatial graph neural network
+* sequence-spatial graph fusion
+* SESG-Net without missing-value indicators
+* complete SESG-Net
 
 The results are saved in:
 
@@ -163,6 +196,12 @@ The evaluation results are saved in:
 
 ```text
 outputs/test/
+```
+
+Run the automated pipeline tests using:
+
+```bash
+python -m pytest -q
 ```
 
 Available training options can be inspected with:

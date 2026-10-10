@@ -20,23 +20,20 @@ LITHOLOGY_MAP = {
 TARGET_COLUMN = "FORCE_2020_LITHOFACIES_LITHOLOGY"
 
 RAW_CURVES = (
-    "CALI",
-    "RSHA",
-    "RMED",
-    "RDEP",
-    "RHOB",
     "GR",
+    "RDEP",
+    "RMED",
+    "RSHA",
+    "RHOB",
     "NPHI",
-    "PEF",
     "DTC",
     "SP",
-    "BS",
-    "ROP",
-    "DRHO",
+    "CALI",
+    "PEF",
 )
 
 LOG_CURVES = ("RSHA", "RMED", "RDEP")
-NORMALIZED_CURVES = ("GR", "RHOB", "NPHI", "DTC", "SP", "ROP")
+NORMALIZED_CURVES = ("GR", "RHOB", "NPHI", "DTC", "SP", "CALI", "PEF")
 
 SEQUENCE_CONTINUOUS_COLUMNS = (
     "GR_NORM",
@@ -44,10 +41,11 @@ SEQUENCE_CONTINUOUS_COLUMNS = (
     "NPHI_NORM",
     "DTC_NORM",
     "SP_NORM",
-    "ROP_NORM",
-    "RSHA_LOG",
-    "RMED_LOG",
-    "RDEP_LOG",
+    "CALI_NORM",
+    "PEF_NORM",
+    "RSHA_LOG_NORM",
+    "RMED_LOG_NORM",
+    "RDEP_LOG_NORM",
     "UMA",
     "VSH",
     "DEPTH_REL",
@@ -58,7 +56,7 @@ DIFFERENCE_COLUMNS = (
     "RHOB_NORM",
     "NPHI_NORM",
     "DTC_NORM",
-    "RDEP_LOG",
+    "RDEP_LOG_NORM",
 )
 
 RAW_TO_CONTINUOUS = {
@@ -67,10 +65,11 @@ RAW_TO_CONTINUOUS = {
     "NPHI": "NPHI_NORM",
     "DTC": "DTC_NORM",
     "SP": "SP_NORM",
-    "ROP": "ROP_NORM",
-    "RSHA": "RSHA_LOG",
-    "RMED": "RMED_LOG",
-    "RDEP": "RDEP_LOG",
+    "CALI": "CALI_NORM",
+    "PEF": "PEF_NORM",
+    "RSHA": "RSHA_LOG_NORM",
+    "RMED": "RMED_LOG_NORM",
+    "RDEP": "RDEP_LOG_NORM",
 }
 
 
@@ -82,10 +81,11 @@ class PipelineConfig:
         "NPHI_NORM",
         "DTC_NORM",
         "SP_NORM",
-        "ROP_NORM",
-        "RSHA_LOG",
-        "RMED_LOG",
-        "RDEP_LOG",
+        "CALI_NORM",
+        "PEF_NORM",
+        "RSHA_LOG_NORM",
+        "RMED_LOG_NORM",
+        "RDEP_LOG_NORM",
         "UMA",
         "VSH",
     )
@@ -94,12 +94,13 @@ class PipelineConfig:
     max_supernode_points: int = 64
     candidate_well_k: int = 6
     candidate_per_well: int = 4
-    max_candidate_nodes: int = 10
+    max_candidate_nodes: int = 64
     min_formation_candidates: int = 10
     allow_group_fallback: bool = True
     search_radius_quantile: float = 0.95
     search_radius_xyz: Optional[float] = 41110.0
     csv_separator: str = ";"
+    use_stratigraphy: bool = True
 
 
 @dataclass(frozen=True)
@@ -120,6 +121,7 @@ class ModelConfig:
     use_sequence: bool = True
     use_spatial: bool = True
     use_stratigraphy: bool = True
+    use_missing_indicators: bool = True
 
 
 @dataclass(frozen=True)

@@ -20,7 +20,7 @@ from sklearn.metrics import (
 )
 from torch.utils.data import DataLoader
 
-from .config import DIFFERENCE_COLUMNS, SEQUENCE_CONTINUOUS_COLUMNS, TrainConfig
+from .config import DIFFERENCE_COLUMNS, SEQUENCE_CONTINUOUS_COLUMNS, PipelineConfig, TrainConfig
 from .dataset import SegmentLithologySequenceDataset, build_well_groups
 from .model import SegmentSpatialTemporalStratModel
 from .preprocessing import TrainingArtifacts
@@ -226,6 +226,7 @@ def build_model(
         use_sequence=model_config.use_sequence,
         use_spatial=model_config.use_spatial,
         use_stratigraphy=model_config.use_stratigraphy,
+        use_missing_indicators=model_config.use_missing_indicators,
     ).to(device)
     return model, context, train_dataset
 
@@ -307,7 +308,7 @@ def train_model(
 
         y_true, y_pred = _predict(model, val_loader, device, amp_enabled)
         accuracy = float(accuracy_score(y_true, y_pred))
-        macro_f1 = float(f1_score(y_true, y_pred, average="macro", zero_division=0))
+        f1 = float(f1_score(y_true, y_pred, average="weighted", zero_division=0))
         penalty = (
             penalty_score(y_true, y_pred, penalty_matrix)
             if penalty_matrix is not None
@@ -323,12 +324,12 @@ def train_model(
             }
 
         LOGGER.info(
-            "Epoch %d/%d loss=%.4f val_accuracy=%.4f macro_f1=%.4f penalty=%s time=%.1fs",
+            "Epoch %d/%d loss=%.4f val_accuracy=%.4f f1=%.4f penalty=%s time=%.1fs",
             epoch,
             config.epochs,
             running_loss / max(len(train_loader), 1),
             accuracy,
-            macro_f1,
+            f1,
             "n/a" if penalty is None else f"{penalty:.4f}",
             time.time() - started,
         )
@@ -346,13 +347,13 @@ def train_model(
     )
     metrics: Dict[str, Optional[float]] = {
         "accuracy": float(accuracy_score(y_true, y_pred)),
-        "precision_macro": float(
-            precision_score(y_true, y_pred, average="macro", zero_division=0)
+        "precision": float(
+            precision_score(y_true, y_pred, average="weighted", zero_division=0)
         ),
-        "recall_macro": float(
-            recall_score(y_true, y_pred, average="macro", zero_division=0)
+        "recall": float(
+            recall_score(y_true, y_pred, average="weighted", zero_division=0)
         ),
-        "f1_macro": float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
+        "f1": float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
         "penalty": (
             penalty_score(y_true, y_pred, penalty_matrix)
             if penalty_matrix is not None
@@ -436,6 +437,8 @@ def save_training_result(
     result: TrainingResult,
     output_dir: PathLike,
     config: TrainConfig,
+    pipeline_config: Optional[PipelineConfig] = None,
+    preprocessing_stats: Optional[Dict[str, object]] = None,
 ) -> None:
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
@@ -445,6 +448,10 @@ def save_training_result(
         "metrics": result.metrics,
         "training_config": asdict(config),
     }
+    if pipeline_config is not None:
+        payload["pipeline_config"] = asdict(pipeline_config)
+    if preprocessing_stats is not None:
+        payload["preprocessing_stats"] = preprocessing_stats
     payload["classification_report"] = result.classification_report
     (output / "metrics.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=2),

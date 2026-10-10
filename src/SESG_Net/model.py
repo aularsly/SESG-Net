@@ -195,7 +195,6 @@ class DynamicWeightedGraphSAGE(nn.Module):
         super().__init__()
         self.project_self = nn.Linear(feature_dim, hidden_dim)
         self.project_neighbor = nn.Linear(feature_dim, hidden_dim)
-        self.join = nn.Linear(hidden_dim * 2, hidden_dim)
         self.activation = nn.GELU()
         self.normalization = nn.LayerNorm(hidden_dim)
         self.dropout = nn.Dropout(dropout)
@@ -209,8 +208,8 @@ class DynamicWeightedGraphSAGE(nn.Module):
         self_state = self.project_self(target)
         neighbor_state = (candidates * weights.unsqueeze(-1)).sum(dim=1)
         neighbor_state = self.project_neighbor(neighbor_state)
-        joined = self.join(torch.cat([self_state, neighbor_state], dim=-1))
-        return self.dropout(self.activation(self.normalization(joined))) + self_state
+        combined = self_state + neighbor_state
+        return self.dropout(self.activation(self.normalization(combined))) + self_state
 
 
 class SegmentSpatialTemporalStratModel(nn.Module):
@@ -241,6 +240,7 @@ class SegmentSpatialTemporalStratModel(nn.Module):
         use_sequence: bool = True,
         use_spatial: bool = True,
         use_stratigraphy: bool = True,
+        use_missing_indicators: bool = True,
     ) -> None:
         super().__init__()
         self.use_sequence = use_sequence
@@ -260,7 +260,7 @@ class SegmentSpatialTemporalStratModel(nn.Module):
                 hidden_channels=128,
             )
             self.missing_branch = MissingAuxiliaryBranch(
-                missing_dim,
+                missing_dim if use_missing_indicators else 0,
                 missing_branch_dim,
                 dropout,
             )

@@ -83,7 +83,10 @@ def preprocess_split(
     stats: Optional[Mapping[str, Any]] = None,
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     df = frame.copy()
-    _require_columns(df, ("WELL", "DEPTH_MD", TARGET_COLUMN, "X_LOC", "Y_LOC"))
+    _require_columns(
+        df,
+        ("WELL", "DEPTH_MD", TARGET_COLUMN, "X_LOC", "Y_LOC", *RAW_CURVES),
+    )
 
     df[TARGET_COLUMN] = df[TARGET_COLUMN].map(LITHOLOGY_MAP)
     df = df.dropna(subset=[TARGET_COLUMN]).copy()
@@ -115,7 +118,7 @@ def preprocess_split(
             df[f"{column}_LOG"] = safe_log10_series(df[column]).astype(np.float32)
 
     if "PEF" in df.columns and "RHOB" in df.columns:
-        df["UMA"] = ((df["PEF"] * (df["RHOB"] + 0.1883)) / 1.07).astype(np.float32)
+        df["UMA"] = (df["PEF"] * df["RHOB"]).astype(np.float32)
     else:
         df["UMA"] = np.float32(0.0)
 
@@ -145,6 +148,15 @@ def preprocess_split(
         mean = grouped.transform("mean")
         std = grouped.transform("std").replace(0, 1).fillna(1)
         df[f"{column}_NORM"] = ((df[column] - mean) / std).astype(np.float32)
+
+    for column in LOG_CURVES:
+        log_column = f"{column}_LOG"
+        if log_column not in df.columns:
+            continue
+        grouped = df.groupby("WELL", sort=False)[log_column]
+        mean = grouped.transform("mean")
+        std = grouped.transform("std").replace(0, 1).fillna(1)
+        df[f"{log_column}_NORM"] = ((df[log_column] - mean) / std).astype(np.float32)
 
     if stats is None:
         group_source = df.get("GROUP", pd.Series("Unknown", index=df.index))
@@ -268,7 +280,11 @@ def fit_response_scaler_and_threshold(
         group = well["GROUP_ID"].to_numpy(dtype=np.int32)
         formation = well["FORMATION_ID"].to_numpy(dtype=np.int32)
         adjacent_distance = np.linalg.norm(response[1:] - response[:-1], axis=1)
-        same_stratigraphy = (group[1:] == group[:-1]) & (formation[1:] == formation[:-1])
+        same_stratigraphy = (
+            (group[1:] == group[:-1]) & (formation[1:] == formation[:-1])
+            if config.use_stratigraphy
+            else np.ones(len(well) - 1, dtype=np.bool_)
+        )
         valid = np.isfinite(adjacent_distance) & same_stratigraphy
         if valid.any():
             differences.append(adjacent_distance[valid])
@@ -303,8 +319,8 @@ def _make_supernode_row(
         "START_POS": start,
         "END_POS": end,
         "SEGMENT_NPOINTS": end - start,
-        "DEPTH_MD_CENTER": float(center["DEPTH_MD"]),
-        "DEPTH_REL_CENTER": float(center["DEPTH_REL"]),
+        "DEPTH_MD_CENTER": float(segment["DEPTH_MD"].mean()),
+        "DEPTH_REL_CENTER": float(segment["DEPTH_REL"].mean()),
         "SEGMENT_THICKNESS_MD": (
             float(segment["DEPTH_MD"].iloc[-1] - segment["DEPTH_MD"].iloc[0])
             if len(segment) > 1
@@ -312,12 +328,12 @@ def _make_supernode_row(
         ),
         "GROUP_ID_MODE": mode_int(segment["GROUP_ID"]),
         "FORMATION_ID_MODE": mode_int(segment["FORMATION_ID"]),
-        "X_LOC": float(center["X_LOC"]),
-        "Y_LOC": float(center["Y_LOC"]),
-        "Z_LOC": float(center["Z_LOC"]),
-        "X_LOC_NORM": float(center["X_LOC_NORM"]),
-        "Y_LOC_NORM": float(center["Y_LOC_NORM"]),
-        "Z_NORM": float(center["Z_NORM"]),
+        "X_LOC": float(segment["X_LOC"].mean()),
+        "Y_LOC": float(segment["Y_LOC"].mean()),
+        "Z_LOC": float(segment["Z_LOC"].mean()),
+        "X_LOC_NORM": float(segment["X_LOC_NORM"].mean()),
+        "Y_LOC_NORM": float(segment["Y_LOC_NORM"].mean()),
+        "Z_NORM": float(segment["Z_NORM"].mean()),
         "TRAIN_POINTS": int(len(segment) if is_train else 0),
         "VAL_POINTS": int(0 if is_train else len(segment)),
         "SOURCE_SPLIT": split_name,
@@ -354,7 +370,7 @@ def _segment_one_split(
         start = 0
         for position in range(1, len(well)):
             length = position - start
-            stratigraphy_changed = (
+            stratigraphy_changed = config.use_stratigraphy and (
                 group[position] != group[position - 1]
                 or formation[position] != formation[position - 1]
             )
@@ -375,7 +391,7 @@ def _segment_one_split(
                 merged.append([start, end])
                 continue
             previous_start, previous_end = merged[-1]
-            same_stratigraphy = (
+            same_stratigraphy = not config.use_stratigraphy or (
                 group[start] == group[previous_end - 1]
                 and formation[start] == formation[previous_end - 1]
             )
@@ -531,7 +547,7 @@ def build_candidate_graph(
     std_matrix = segments[[f"{c}_STD" for c in response_columns]].to_numpy(dtype=np.float32)
     x = segments["X_LOC"].to_numpy(dtype=np.float32)
     y = segments["Y_LOC"].to_numpy(dtype=np.float32)
-    z = segments["Z_LOC"].to_numpy(dtype=np.float32)
+    z = segments["DEPTH_MD_CENTER"].to_numpy(dtype=np.float32)
     depth_relative = segments["DEPTH_REL_CENTER"].to_numpy(dtype=np.float32)
     well_ids = segments["WELL_ID"].to_numpy(dtype=np.int32)
     group_ids = segments["GROUP_ID_MODE"].to_numpy(dtype=np.int32)
@@ -540,13 +556,17 @@ def build_candidate_graph(
     xyz = np.column_stack([x, y, z]).astype(np.float32)
     formation_indices = {}
     group_indices = {}
-    for formation_id in np.unique(formation_ids[source_ids]):
-        if formation_id != 0:
-            ids = source_ids[formation_ids[source_ids] == formation_id]
-            formation_indices[int(formation_id)] = _build_radius_index(ids, xyz, radius)
-    for group_id in np.unique(group_ids[source_ids]):
-        ids = source_ids[group_ids[source_ids] == group_id]
-        group_indices[int(group_id)] = _build_radius_index(ids, xyz, radius)
+    global_index = None
+    if config.use_stratigraphy:
+        for formation_id in np.unique(formation_ids[source_ids]):
+            if formation_id != 0:
+                ids = source_ids[formation_ids[source_ids] == formation_id]
+                formation_indices[int(formation_id)] = _build_radius_index(ids, xyz, radius)
+        for group_id in np.unique(group_ids[source_ids]):
+            ids = source_ids[group_ids[source_ids] == group_id]
+            group_indices[int(group_id)] = _build_radius_index(ids, xyz, radius)
+    else:
+        global_index = _build_radius_index(source_ids, xyz, radius)
 
     neighbors = np.zeros((node_count, config.max_candidate_nodes), dtype=np.int32)
     mask = np.zeros((node_count, config.max_candidate_nodes), dtype=np.bool_)
@@ -556,14 +576,17 @@ def build_candidate_graph(
     for source in range(node_count):
         relations: List[Tuple[float, int, np.ndarray]] = []
         selected_ids = np.empty(0, dtype=np.int32)
-        formation_index = formation_indices.get(int(formation_ids[source]))
-        if formation_index is not None:
-            selected_ids, _ = _query_radius_index(source, formation_index, xyz, well_ids, radius)
-        if config.allow_group_fallback and len(selected_ids) < config.min_formation_candidates:
-            group_index = group_indices.get(int(group_ids[source]))
-            if group_index is not None:
-                group_ids_found, _ = _query_radius_index(source, group_index, xyz, well_ids, radius)
-                selected_ids = np.unique(np.concatenate([selected_ids, group_ids_found])).astype(np.int32)
+        if config.use_stratigraphy:
+            formation_index = formation_indices.get(int(formation_ids[source]))
+            if formation_index is not None:
+                selected_ids, _ = _query_radius_index(source, formation_index, xyz, well_ids, radius)
+            if config.allow_group_fallback and len(selected_ids) < config.min_formation_candidates:
+                group_index = group_indices.get(int(group_ids[source]))
+                if group_index is not None:
+                    group_ids_found, _ = _query_radius_index(source, group_index, xyz, well_ids, radius)
+                    selected_ids = np.unique(np.concatenate([selected_ids, group_ids_found])).astype(np.int32)
+        elif global_index is not None:
+            selected_ids, _ = _query_radius_index(source, global_index, xyz, well_ids, radius)
         for target in selected_ids:
             horizontal_distance = float(np.hypot(x[source] - x[target], y[source] - y[target]))
             vertical_distance = abs(float(z[source] - z[target]))
@@ -654,6 +677,7 @@ def build_artifacts_from_frames(
             "max_candidate_nodes": config.max_candidate_nodes,
             "min_formation_candidates": config.min_formation_candidates,
             "allow_group_fallback": config.allow_group_fallback,
+            "use_stratigraphy": config.use_stratigraphy,
             "search_radius_quantile": config.search_radius_quantile,
             "search_radius_xyz": radius,
             "segment_feature_columns": feature_columns,

@@ -166,6 +166,19 @@ The corresponding results are saved in:
 outputs/baselines/
 ```
 
+The comparison results are shown below.
+
+| Model | Accuracy | Precision | Recall | F1-score | Penalty |
+|---|---:|---:|---:|---:|---:|
+| SESG-Net | 81.46 | 80.09 | 81.46 | 80.36 | -0.47 |
+| RF | 79.89 | 76.88 | 79.89 | 76.27 | -0.52 |
+| XGBoost | 79.69 | 76.93 | 79.69 | 76.84 | -0.52 |
+| CatBoost | 76.90 | 77.89 | 76.90 | 76.86 | -0.61 |
+| MLP | 73.46 | 75.40 | 73.46 | 73.98 | -0.71 |
+| BiLSTM | 73.25 | 72.60 | 73.25 | 72.64 | -0.67 |
+| TCN | 69.75 | 72.00 | 69.75 | 70.57 | -0.76 |
+| GAT | 72.90 | 69.05 | 72.90 | 70.26 | -0.71 |
+
 ## Ablation Studies
 
 Component ablation experiments can be executed using:
@@ -188,6 +201,17 @@ The results are saved in:
 ```text
 outputs/ablations/
 ```
+
+The ablation results are shown below.
+
+| Group | Sequence encoding | Spatial graph | Stratigraphic constraint | Missing-value indicators | Accuracy | Precision | Recall | F1-score | Penalty |
+|---:|:---:|:---:|:---:|:---:|---:|---:|---:|---:|---:|
+| 1 | ✓ | — | — | ✓ | 77.89 | 75.17 | 75.93 | 75.57 | -0.56 |
+| 2 | — | ✓ | — | — | 70.36 | 65.36 | 70.36 | 67.10 | -0.84 |
+| 3 | — | ✓ | ✓ | — | 76.65 | 75.09 | 76.65 | 75.03 | -0.63 |
+| 4 | ✓ | ✓ | — | ✓ | 80.11 | 78.15 | 80.11 | 77.97 | -0.51 |
+| 5 | ✓ | ✓ | ✓ | — | 79.69 | 78.54 | 79.69 | 78.94 | -0.51 |
+| 6 | ✓ | ✓ | ✓ | ✓ | 81.46 | 80.09 | 81.46 | 80.36 | -0.47 |
 
 ## Evaluation
 

@@ -20,7 +20,7 @@ GraphSAGE combines the transformed target feature with the weighted transformed 
 
 ## Fusion and training
 
-The sequence, missing-state, and spatial representations are concatenated and passed through the classification head. The network is trained with cross-entropy loss and AdamW. Accuracy is used for checkpoint selection, with Penalty used as the tie breaker.
+The sequence representation, which incorporates the encoded missing-state information, is concatenated with the spatial representation and passed through the classification head. The network is trained with cross-entropy loss and AdamW. Accuracy is used for checkpoint selection, with Penalty used as the tie breaker.
 
 ## Evaluation
 

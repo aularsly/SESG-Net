@@ -65,7 +65,7 @@ SESG-Net uses ten well-log curves: GR, RDEP, RMED, RSHA, RHOB, NPHI, DTC, SP, CA
 
 *Fig. 2. Well-log sequence encoding module.*
 
-For each target depth, the sequence branch constructs a centered window of 129 samples. Parallel one-dimensional convolutions with kernel sizes of 9, 19, and 39 extract multiscale response patterns. Residual feature extraction and attention pooling produce the sequence representation, while an auxiliary branch encodes the missing-value indicators.
+For each target depth, the sequence branch constructs a centered window of 129 samples. Parallel one-dimensional convolutions with kernel sizes of 9, 19, and 39 extract multiscale response patterns. The well-log features and their corresponding missing-value indicators are synchronously encoded within the sequence branch to obtain the vertical sequence representation.
 
 ### Stratigraphy-constrained Spatial Graph
 
@@ -73,7 +73,7 @@ For each target depth, the sequence branch constructs a centered window of 129 s
 
 *Fig. 3. Stratigraphy-constrained spatial graph neural network module.*
 
-Consecutive samples with similar responses are grouped into supernodes. Cross-well candidate nodes are searched within the stratigraphic context and spatial radius. The dynamic edge scorer selects 10 neighboring supernodes, and GraphSAGE aggregates their features. The sequence, missing-state, and spatial representations are fused for sample-level lithology prediction.
+Consecutive samples with similar responses are grouped into supernodes. Cross-well candidate nodes are searched within the stratigraphic context and spatial radius. The dynamic edge scorer selects 10 neighboring supernodes, and GraphSAGE aggregates their features. The sequence representation, which incorporates missing-state information, is fused with the spatial representation for sample-level lithology prediction.
 
 ## Installation
 

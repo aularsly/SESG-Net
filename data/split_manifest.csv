@@ -1,0 +1,119 @@
+WELL,split
+15/9-13,train
+15/9-15,train
+15/9-17,train
+16/1-2,train
+16/1-6 A,train
+16/10-1,train
+16/10-2,train
+16/10-3,train
+16/10-5,train
+16/11-1 ST3,train
+16/2-11 A,train
+16/2-16,train
+16/2-6,train
+16/4-1,train
+16/5-3,train
+16/7-4,train
+16/7-5,train
+16/8-1,train
+17/11-1,train
+25/11-15,train
+25/11-19 S,train
+25/11-5,train
+25/2-13 T4,train
+25/2-14,train
+25/2-7,train
+25/3-1,train
+25/4-5,train
+25/5-1,train
+25/5-4,train
+25/6-1,train
+25/6-2,train
+25/6-3,train
+25/7-2,train
+25/8-5 S,train
+25/8-7,train
+25/9-1,train
+26/4-1,train
+29/6-1,train
+30/3-3,train
+30/3-5 S,train
+30/6-5,train
+31/2-1,train
+31/2-19 S,train
+31/2-7,train
+31/2-8,train
+31/2-9,train
+31/3-1,train
+31/3-2,train
+31/3-3,train
+31/3-4,train
+31/4-10,train
+31/4-5,train
+31/5-4 S,train
+31/6-5,train
+31/6-8,train
+32/2-1,train
+33/5-2,train
+33/6-3 S,train
+33/9-1,train
+33/9-17,train
+34/10-19,train
+34/10-21,train
+34/10-33,train
+34/10-35,train
+34/11-1,train
+34/11-2 S,train
+34/12-1,train
+34/2-4,train
+34/3-1 A,train
+34/4-10 R,train
+34/5-1 A,train
+34/5-1 S,train
+34/7-13,train
+34/7-20,train
+34/7-21,train
+34/8-1,train
+34/8-3,train
+34/8-7 R,train
+35/11-1,train
+35/11-10,train
+35/11-11,train
+35/11-12,train
+35/11-13,train
+35/11-15 S,train
+35/11-6,train
+35/11-7,train
+35/12-1,train
+35/3-7 S,train
+35/4-1,train
+35/8-4,train
+35/8-6 S,train
+35/9-10 S,train
+35/9-2,train
+35/9-5,train
+35/9-6 S,train
+36/7-3,train
+7/1-1,train
+7/1-2 S,train
+15/9-14,val
+25/10-10,val
+25/11-24,val
+25/5-3,val
+29/3-1,val
+34/10-16 R,val
+34/3-3 A,val
+34/6-1 S,val
+35/6-2 S,val
+35/9-8,val
+15/9-23,test
+16/2-7,test
+16/7-6,test
+17/4-1,test
+25/10-9,test
+31/2-10,test
+31/2-21 S,test
+34/3-2 S,test
+35/11-5,test
+35/9-7,test

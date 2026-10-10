@@ -47,3 +47,10 @@ def test_sample_files_have_disjoint_wells():
     assert wells["train"].isdisjoint(wells["val"])
     assert wells["train"].isdisjoint(wells["test"])
     assert wells["val"].isdisjoint(wells["test"])
+
+
+def test_split_manifest_has_fixed_disjoint_wells():
+    manifest = pd.read_csv(Path(__file__).resolve().parents[1] / "data" / "split_manifest.csv")
+    assert list(manifest.columns) == ["WELL", "split"]
+    assert manifest["split"].value_counts().to_dict() == {"train": 98, "val": 10, "test": 10}
+    assert manifest["WELL"].nunique() == 118

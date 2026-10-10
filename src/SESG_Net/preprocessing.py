@@ -475,23 +475,7 @@ def build_supernodes_and_assign(
 
 
 def estimate_search_radius(segments: pd.DataFrame, config: PipelineConfig) -> float:
-    if config.search_radius_xyz is not None:
-        return float(config.search_radius_xyz)
-
-    train_wells = (
-        segments[segments["TRAIN_POINTS"] > 0][["WELL_ID", "X_LOC", "Y_LOC"]]
-        .groupby("WELL_ID", as_index=False)
-        .median(numeric_only=True)
-    )
-    xy = train_wells[["X_LOC", "Y_LOC"]].to_numpy(dtype=np.float32)
-    if len(xy) <= 1:
-        return float("inf")
-
-    neighbor_count = min(config.candidate_well_k + 1, len(xy))
-    estimator = NearestNeighbors(n_neighbors=neighbor_count, metric="euclidean")
-    distances, _ = estimator.fit(xy).kneighbors(xy)
-    radius = float(np.quantile(distances[:, -1], config.search_radius_quantile))
-    return max(radius, 1e-6)
+    return float(config.search_radius_xyz)
 
 
 def _nearest_positions(sorted_values: np.ndarray, target: float, count: int) -> List[int]:
@@ -672,13 +656,10 @@ def build_artifacts_from_frames(
             "response_diff_threshold": threshold,
             "min_supernode_points": config.min_supernode_points,
             "max_supernode_points": config.max_supernode_points,
-            "candidate_well_k": config.candidate_well_k,
-            "candidate_per_well": config.candidate_per_well,
             "max_candidate_nodes": config.max_candidate_nodes,
             "min_formation_candidates": config.min_formation_candidates,
             "allow_group_fallback": config.allow_group_fallback,
             "use_stratigraphy": config.use_stratigraphy,
-            "search_radius_quantile": config.search_radius_quantile,
             "search_radius_xyz": radius,
             "segment_feature_columns": feature_columns,
         }

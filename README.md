@@ -9,6 +9,7 @@ This repository provides the implementation for data preprocessing, model traini
 ```text
 .
 |-- data/
+|   |-- split_manifest.csv
 |   |-- sample/
 |   `-- README.md
 |-- docs/
@@ -94,6 +95,8 @@ For GPU acceleration, install a PyTorch version compatible with the local CUDA e
 
 The experiments are based on the [FORCE 2020 Well Log Lithology Dataset](https://zenodo.org/records/4351156).
 
+The fixed assignment of 98 training wells, 10 validation wells, and 10 blind-test wells is provided in `data/split_manifest.csv`.
+
 Detailed information about data acquisition, required columns, lithology labels, and penalty-matrix order is provided in:
 
 ```text
@@ -104,6 +107,7 @@ The processed dataset should be organized as follows:
 
 ```text
 data/
+|-- split_manifest.csv
 |-- train.csv
 |-- val.csv
 |-- test.csv
@@ -112,6 +116,7 @@ data/
 
 where:
 
+* `split_manifest.csv`: fixed 98/10/10 well assignment
 * `train.csv`: training dataset
 * `val.csv`: validation dataset
 * `test.csv`: test dataset

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, Tuple
+from typing import Tuple
 
 
 LITHOLOGY_MAP = {
@@ -92,13 +92,10 @@ class PipelineConfig:
     response_diff_quantile: float = 0.98
     min_supernode_points: int = 8
     max_supernode_points: int = 64
-    candidate_well_k: int = 6
-    candidate_per_well: int = 4
     max_candidate_nodes: int = 64
     min_formation_candidates: int = 10
     allow_group_fallback: bool = True
-    search_radius_quantile: float = 0.95
-    search_radius_xyz: Optional[float] = 41110.0
+    search_radius_xyz: float = 41110.0
     csv_separator: str = ";"
     use_stratigraphy: bool = True
 

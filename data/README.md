@@ -6,6 +6,7 @@ Prepare the following files:
 
 ```text
 data/
+|-- split_manifest.csv
 |-- train.csv
 |-- val.csv
 |-- test.csv
@@ -55,4 +56,6 @@ The lithology order is:
 
 `penalty_matrix.npy` must have shape 12 x 12 and use this class order for both axes.
 
-The split is performed by well. The training, validation, and test well lists must be disjoint and fixed before model training. The repository sample files provide a small execution check and do not replace the complete dataset.
+The fixed well assignment is provided in `split_manifest.csv`. It contains 98 training wells, 10 validation wells, and 10 test wells. Each well appears once, and the three subsets are disjoint. The `WELL` column stores the original well name and the `split` column identifies its assigned subset.
+
+The repository sample files provide a small execution check and do not replace the complete dataset.
